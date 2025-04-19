@@ -1,75 +1,64 @@
-/**
- * This example implements the famous "99 Bottles of Beer" program
- * See http://99-bottles-of-beer.net/
- *
- * The point is to print out a song with the following lyrics:
- *
- *     The "99 bottles of beer" song
- *
- *     99 bottles of beer on the wall, 99 bottles of beer.
- *     Take one down, pass it around, 98 bottles of beer on the wall.
- *
- *     98 bottles of beer on the wall, 98 bottles of beer.
- *     Take one down, pass it around, 97 bottles of beer on the wall.
- *
- *       ...
- *
- *     2 bottles of beer on the wall, 2 bottles of beer.
- *     Take one down, pass it around, 1 bottle of beer on the wall.
- *
- *     1 bottle of beer on the wall, 1 bottle of beer.
- *     Take one down, pass it around, no more bottles of beer on the wall.
- *
- *     No more bottles of beer on the wall, no more bottles of beer.
- *     Go to the store and buy some more, 99 bottles of beer on the wall.
- *
- * Additionally, you can pass the desired initial number of bottles to use (rather than 99)
- * as a command-line argument
- */
-fun main(args: Array<String>) {
-    if (args.isEmpty) {
-        printBottles(99)
-    } else {
-        try {
-            printBottles(args[0].toInt())
-        } catch (e: NumberFormatException) {
-            println("You have passed '${args[0]}' as a number of bottles, " +
-                    "but it is not a valid integer number")
-        }
+package org.socialmesh
+
+import kotlinx.coroutines.runBlocking
+import org.koin.core.context.startKoin
+import org.socialmesh.core.SocialMeshContainer
+import org.socialmesh.core.impl.DefaultLifecycleService
+import org.socialmesh.core.impl.Ed25519CryptoService
+import org.socialmesh.core.impl.InMemoryConfigurationService
+import org.socialmesh.core.impl.LocalResourceService
+import org.socialmesh.core.impl.SimpleLoggingService
+import org.socialmesh.eventbus.DisruptorEventBus
+import org.socialmesh.network.impl.MycelialNetworkService
+import org.socialmesh.storage.impl.RocksDBStorageService
+import org.koin.dsl.module
+
+fun main(args: Array<String>) = runBlocking {
+    println("Starting SocialMesh application...")
+
+    // Création du module Koin pour l'injection de dépendances
+    val appModule = module {
+        // Core services
+        single { DefaultLifecycleService() }
+        single { InMemoryConfigurationService() }
+        single { SimpleLoggingService() }
+        single { Ed25519CryptoService() }
+        single { LocalResourceService() }
+        
+        // EventBus
+        single { DisruptorEventBus() }
+        
+        // Storage
+        single { RocksDBStorageService() }
+        
+        // Network
+        single { MycelialNetworkService() }
+        
+        // Main container
+        single { SocialMeshContainer() }
+    }
+
+    // Initialisation de Koin
+    startKoin {
+        modules(appModule)
+    }
+
+    // Récupération et initialisation du container
+    val container = org.koin.java.KoinJavaComponent.getKoin().get<SocialMeshContainer>()
+    container.initialize()
+    container.start()
+
+    // Maintenir l'application en vie jusqu'à ce qu'on reçoive un signal d'arrêt
+    Runtime.getRuntime().addShutdownHook(Thread {
+        println("Shutting down SocialMesh...")
+        container.shutdown()
+    })
+
+    println("SocialMesh application started successfully.")
+    println("Press Ctrl+C to exit.")
+    
+    // Attendre indéfiniment (dans une application réelle, vous auriez une boucle principale ou un serveur)
+    while (true) {
+        Thread.sleep(1000)
     }
 }
-
-fun printBottles(bottleCount: Int) {
-    if (bottleCount <= 0) {
-        println("No bottles - no song")
-        return
-    }
-
-    println("The \"${bottlesOfBeer(bottleCount)}\" song\n")
-
-    var bottles = bottleCount
-    while (bottles > 0) {
-        val bottlesOfBeer = bottlesOfBeer(bottles)
-        print("$bottlesOfBeer on the wall, $bottlesOfBeer.\nTake one down, pass it around, ")
-        bottles--
-        println("${bottlesOfBeer(bottles)} on the wall.\n")
-    }
-    println("No more bottles of beer on the wall, no more bottles of beer.\n" +
-            "Go to the store and buy some more, ${bottlesOfBeer(bottleCount)} on the wall.")
-}
-
-fun bottlesOfBeer(count: Int): String =
-        when (count) {
-            0 -> "no more bottles"
-            1 -> "1 bottle"
-            else -> "$count bottles"
-        } + " of beer"
-
-/*
- * An excerpt from the Standard Library
- */
-
-
-// This is an extension property, i.e. a property that is defined for the
-// type Array<T>, but does not sit inside the class Array
-val <T> Array<T>.isEmpty: Boolean get() = size == 0
