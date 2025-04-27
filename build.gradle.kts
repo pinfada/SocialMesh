@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.21"
+    kotlin("multiplatform") version "1.9.21"
     application
 }
 
@@ -22,11 +22,21 @@ allprojects {
     }
 }
 
-dependencies {
-    implementation(project(":core"))
-    implementation(project(":eventbus"))
-    implementation(project(":storage"))
-    implementation(project(":network"))
+kotlin {
+    jvm {
+        withJava()
+    }
+    
+    sourceSets {
+        val jvmMain by getting {
+            dependencies {
+                implementation(project(":core"))
+                implementation(project(":eventbus"))
+                implementation(project(":storage")) 
+                implementation(project(":network"))
+            }
+        }
+    }
 }
 
 application {

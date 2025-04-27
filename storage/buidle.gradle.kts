@@ -23,6 +23,20 @@ kotlin {
         }
     }
 
+    // Configuration JVM modifiée - SANS withJava()
+    jvm ({
+        // Suppression de withJava() qui est incompatible avec Android
+        compilations.all {
+            kotlinOptions.jvmTarget = "17"
+        }
+        
+        attributes {
+            attribute(org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.attribute, 
+                     org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm)
+            attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+        }
+    })
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -58,6 +72,27 @@ kotlin {
                 // Pour iOS, nous utiliserons SQLite intégré via une abstraction
             }
         }
+
+        val jvmMain by getting {
+            dependsOn(commonMain)
+            dependencies {
+                // RocksDB pour JVM
+                implementation("org.rocksdb:rocksdbjni:7.10.2")
+                // Autres dépendances spécifiques JVM si nécessaire
+            }
+        }
+        
+        val jvmTest by getting {
+            dependsOn(commonMain)
+            dependencies {
+                // Dépendances de test JVM si nécessaire
+            }
+        }
+    }
+    
+    // Assurez-vous que les configurations JVM sont correctement publiées
+    tasks.withType<org.gradle.api.publish.maven.tasks.AbstractPublishToMaven>().configureEach {
+        dependsOn(tasks.named("jvmJar"))
     }
 }
 

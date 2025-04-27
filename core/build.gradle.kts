@@ -23,6 +23,20 @@ kotlin {
         }
     }
 
+    // Configuration JVM modifiée - SANS withJava()
+    jvm {
+        // Suppression de withJava() qui est incompatible avec Android
+        compilations.all {
+            kotlinOptions.jvmTarget = "17"
+        }
+        
+        attributes {
+            attribute(org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.attribute, 
+                     org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm)
+            attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -57,6 +71,19 @@ kotlin {
             iosArm64Main.dependsOn(this)
             iosSimulatorArm64Main.dependsOn(this)
         }
+
+        val jvmMain by getting {
+            dependsOn(commonMain)
+            dependencies {
+                // Dépendances spécifiques JVM si nécessaire
+            }
+        }
+    }
+    
+    // Assurez-vous que les configurations JVM sont correctement publiées
+    // Cette partie est optionnelle mais recommandée
+    tasks.withType<org.gradle.api.publish.maven.tasks.AbstractPublishToMaven>().configureEach {
+        dependsOn(tasks.named("jvmJar"))
     }
 }
 

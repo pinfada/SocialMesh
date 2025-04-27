@@ -5,11 +5,22 @@ plugins {
 }
 
 kotlin {
-    android {
+    androidTarget {
         compilations.all {
             kotlinOptions {
                 jvmTarget = "1.8"
             }
+        }
+    }
+
+    jvm {
+        attributes {
+            attribute(org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.attribute, 
+                     org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm)
+            attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+        }
+        compilations.all {
+            kotlinOptions.jvmTarget = "17"
         }
     }
 
@@ -61,6 +72,13 @@ kotlin {
 
             dependencies {
                 // Ajoute ici les dépendances spécifiques iOS si besoin
+            }
+        }
+
+        val jvmMain by getting {
+            dependsOn(commonMain)
+            dependencies {
+                // Dépendances spécifiques JVM si nécessaire
             }
         }
     }

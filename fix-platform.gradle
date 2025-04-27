@@ -1,0 +1,115 @@
+// Enregistrez ce script sous le nom fix-platform.gradle
+// Exécutez avec: ./gradlew -q --init-script fix-platform.gradle help
+
+// Ce script est conçu pour fonctionner avec des versions plus anciennes de Gradle
+
+gradle.afterProject { project ->
+    if (project.path in listOf(":storage", ":network")) {
+        println("\n[FIX] Analysing module: ${project.path}")
+        
+        // Vérifier si c'est un module Kotlin Multiplatform
+        def isKmp = project.plugins.hasPlugin("org.jetbrains.kotlin.multiplatform") || 
+                   project.plugins.hasPlugin("kotlin-multiplatform")
+        
+        println("[FIX] Est un module Kotlin Multiplatform: ${isKmp}")
+        
+        // Vérifier les configurations existantes
+        def hasJvmConfig = project.configurations.names.any { 
+            it.contains("jvm", ignoreCase = true) && it.contains("Runtime", ignoreCase = true) 
+        }
+        
+        println("[FIX] A une configuration JVM: ${hasJvmConfig}")
+        
+        if (!hasJvmConfig) {
+            println("\n[FIX] MODIFICATIONS RECOMMANDÉES POUR ${project.path}:")
+            println("""
+            Pour corriger l'erreur de dépendance, ajoutez ce code à ${project.path}/build.gradle(.kts):
+            
+            ```kotlin
+            plugins {
+                kotlin("multiplatform") // Assurez-vous que c'est en place
+                // Gardez vos autres plugins existants
+            }
+            
+            kotlin {
+                // Gardez vos cibles existantes (android, ios, etc.)
+                
+                // AJOUTEZ CETTE SECTION:
+                jvm {
+                    withJava()
+                    attributes {
+                        attribute(org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.attribute, 
+                                 org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm)
+                        attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 17)
+                    }
+                    compilations.all {
+                        kotlinOptions.jvmTarget = "17"
+                    }
+                }
+                
+                sourceSets {
+                    // Gardez vos sourceSets existants
+                    
+                    // AJOUTEZ CETTE SECTION:
+                    jvmMain {
+                        dependsOn(commonMain)
+                        // Si nécessaire:
+                        // kotlin.srcDirs("src/jvmMain/kotlin")
+                    }
+                    jvmTest {
+                        dependsOn(commonTest)
+                        // Si nécessaire:
+                        // kotlin.srcDirs("src/jvmTest/kotlin")
+                    }
+                }
+            }
+            ```
+            
+            Ensuite, créez les répertoires suivants:
+            - src/jvmMain/kotlin
+            - src/jvmTest/kotlin
+            
+            Ajoutez un fichier minimal dans src/jvmMain/kotlin (par exemple JvmPlatform.kt)
+            avec les classes ou fonctions nécessaires pour satisfaire les dépendances
+            "expect" de commonMain.
+            """)
+        }
+    }
+}
+
+gradle.rootProject {
+    println("\n[FIX] MODIFICATION RECOMMANDÉE POUR LE PROJET PRINCIPAL:")
+    println("""
+    Dans le build.gradle(.kts) du projet principal, modifiez les dépendances vers les modules problématiques:
+    
+    ```kotlin
+    dependencies {
+        // Conservez les autres dépendances
+        implementation(project(":core"))
+        implementation(project(":eventbus"))
+        
+        // MODIFIEZ CES LIGNES:
+        implementation(project(path = ":storage", configuration = "jvmRuntimeElements"))
+        implementation(project(path = ":network", configuration = "jvmRuntimeElements"))
+    }
+    ```
+    
+    Cette modification indique explicitement à Gradle quelle configuration utiliser 
+    pour chaque module, en évitant ainsi l'erreur de résolution des attributs de plateforme.
+    """)
+    
+    println("\n[FIX] ÉTAPES DE VÉRIFICATION:")
+    println("""
+    Après avoir effectué ces modifications:
+    
+    1. Vérifiez que les répertoires source JVM sont créés:
+       - ./storage/src/jvmMain/kotlin
+       - ./network/src/jvmMain/kotlin
+    
+    2. Exécutez la commande suivante pour vérifier la configuration:
+       ./gradlew projects --dry-run
+    
+    3. Si tout est correct, exécutez un build complet:
+       ./gradlew build
+    """)
+}
