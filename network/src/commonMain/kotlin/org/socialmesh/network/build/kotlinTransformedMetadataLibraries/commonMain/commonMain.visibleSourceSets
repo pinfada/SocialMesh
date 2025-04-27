@@ -1,0 +1,4 @@
+module org.jetbrains.kotlin:kotlin-stdlib:1.9.21 => commonMain
+module org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3 => commonMain,concurrentMain
+module org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0 => commonMain
+module org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.0 => commonMain

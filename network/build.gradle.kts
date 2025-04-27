@@ -5,83 +5,75 @@ plugins {
 }
 
 kotlin {
-    androidTarget {
+    android {
         compilations.all {
             kotlinOptions {
                 jvmTarget = "1.8"
             }
         }
     }
-    
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
+
+    val iosX64 = iosX64()
+    val iosArm64 = iosArm64()
+    val iosSimulatorArm64 = iosSimulatorArm64()
+
+    listOf(iosX64, iosArm64, iosSimulatorArm64).forEach {
         it.binaries.framework {
-            baseName = "network"
+            baseName = "storage"
         }
     }
 
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation(project(":core"))
-                implementation(project(":eventbus"))
-                implementation(project(":storage"))
-                
-                // Coroutines
+                // Dépendances partagées ici
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                // Serialization
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-                // Ktor
-                implementation("io.ktor:ktor-client-core:2.3.5")
-                implementation("io.ktor:ktor-client-content-negotiation:2.3.5")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.5")
-                implementation("io.ktor:ktor-client-logging:2.3.5")
-                implementation("io.ktor:ktor-client-websockets:2.3.5")
-                // DI
-                implementation("io.insert-koin:koin-core:3.4.3")
-                // UUID
-                implementation("com.benasher44:uuid:0.7.1")
+                implementation("io.ktor:ktor-server-core:2.3.5")
+                implementation("io.ktor:ktor-server-netty:2.3.5")
+                implementation("io.ktor:ktor-server-websockets:2.3.5")
+                // ajoute d'autres dépendances communes ici
             }
         }
-        
+
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+
         val androidMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-okhttp:2.3.5")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-                
-                // Pour la découverte P2P
-                implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-                implementation("com.google.android.gms:play-services-nearby:18.7.0")
+                // Ajoute ici toute dépendance spécifique Android si besoin
             }
         }
-        
+
         val iosX64Main by getting
         val iosArm64Main by getting
         val iosSimulatorArm64Main by getting
+
         val iosMain by creating {
             dependsOn(commonMain)
             iosX64Main.dependsOn(this)
             iosArm64Main.dependsOn(this)
             iosSimulatorArm64Main.dependsOn(this)
-            
+
             dependencies {
-                implementation("io.ktor:ktor-client-darwin:2.3.5")
+                // Ajoute ici les dépendances spécifiques iOS si besoin
             }
         }
     }
 }
 
 android {
-    namespace = "org.socialmesh.network"
+    namespace = "org.socialmesh.storage"
     compileSdk = 34
-    
+
     defaultConfig {
         minSdk = 24
     }
-    
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
